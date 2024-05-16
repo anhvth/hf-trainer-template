@@ -1,9 +1,13 @@
 # base_trainer.py
+from argparse import ArgumentParser
+import logging
+import os
+from loguru import logger
+import tabulate
 import torch
 import transformers
 from transformers import (
     Trainer,
-    TrainingArguments,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
@@ -11,47 +15,14 @@ from transformers import (
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+import yaml
 
-
-@dataclass
-class ModelArguments:
-    model_name_or_path: Optional[str] = "Qwen1.5/Qwen-1_8B"
-
-
-@dataclass
-class DataArguments:
-    data_path: str = None
-    eval_data_path: str = None
-    lazy_preprocess: bool = False
-
-
-@dataclass
-class TrainingArguments(transformers.TrainingArguments):
-    cache_dir: Optional[str] = None
-    optim: str = "adamw_torch"
-    model_max_length: int = 8192
-    use_lora: bool = False
-
-
-@dataclass
-class LoraArguments:
-    lora_r: int = 64
-    lora_alpha: int = 16
-    lora_dropout: float = 0.05
-    lora_target_modules: List[str] = field(
-        default_factory=lambda: [
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            "up_proj",
-            "gate_proj",
-            "down_proj",
-        ]
-    )
-    lora_weight_path: str = ""
-    lora_bias: str = "none"
-    q_lora: bool = False
+from hftrainer.trainer.base_dataclasses import (
+    DataArguments,
+    LoraArguments,
+    ModelArguments,
+    TrainingArguments,
+)
 
 
 def init_model(model_args, training_args, lora_args, device_map=None):
@@ -116,40 +87,70 @@ def init_model(model_args, training_args, lora_args, device_map=None):
     return model, tokenizer
 
 
-class BaseTrainer:
-    def __init__(
-        self,
-        model_args: ModelArguments,
-        data_args: DataArguments,
-        training_args: TrainingArguments,
-        lora_args: LoraArguments,
-    ):
+if os.getenv("JUPYTER") == "True":
+    from speedy import imemoize
+
+    logger.info("Using imemoize in Jupyter notebook.")
+    init_model = imemoize(init_model)
+
+
+def parse_args(config_path=None, verbose=True):
+    parser = ArgumentParser()
+    if config_path is None:
+        parser.add_argument("--config_path", type=str, default=config_path)
+        return parser.parse_args()["config_path"]
+
+    def load_yaml(file_path):
+        with open(file_path, "r") as f:
+            return yaml.safe_load(f)
+
+    all_args = load_yaml(config_path)
+
+    if verbose:
+        for k in all_args.keys():
+            print("\n\nArguments table:", k)
+            v = all_args[k]
+            v = tabulate.tabulate(all_args[k].items(), tablefmt="fancy_grid")
+            print(v)
+
+    model_args = ModelArguments(**all_args["model_args"])
+    data_args = DataArguments(**all_args["data_args"])
+    training_args = TrainingArguments(**all_args["training_args"])
+    lora_args = LoraArguments(**all_args["lora_args"])
+
+    return model_args, data_args, training_args, lora_args
+
+
+class BaseTrainer(Trainer):
+    def __init__(self, config_path, verbose=True):
         self.model_args, self.data_args, self.training_args, self.lora_args = (
-            model_args,
-            data_args,
-            training_args,
-            lora_args,
+            parse_args(config_path, verbose=verbose)
         )
-        self.load_datasets()
         self.load_model()
-        self.trainer = Trainer(
+        dataset = self.load_datasets()
+
+        # Initialize the CustomTrainer parent class
+        super().__init__(
             model=self.model,
             args=self.training_args,
-            train_dataset=self.train_dataset,
-            eval_dataset=self.eval_dataset,
+            train_dataset=dataset["train"],
+            eval_dataset=dataset["test"],
             tokenizer=self.tokenizer,
         )
 
     def load_model(self):
+        logger.debug("Loading model and tokenizer with provided arguments.")
         self.model, self.tokenizer = init_model(
             self.model_args, self.training_args, self.lora_args
         )
+        logger.debug("Model and tokenizer loaded successfully.")
 
     def load_datasets(self):
-        # Placeholder for loading datasets, to be implemented in subclasses
         raise NotImplementedError(
             "Subclasses should implement this method to load datasets."
         )
 
-    def train(self):
-        self.trainer.train()
+    def compute_loss(self, model, inputs, return_outputs=False):
+        outputs = model(**inputs)
+        loss = outputs.loss
+        return (loss, outputs) if return_outputs else loss

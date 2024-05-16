@@ -9,6 +9,9 @@ from hftrainer.trainer.base import (
 from hftrainer.utils import parse_args
 import tabulate
 
+class Trainer(BaseTrainer):
+    def load_datasets(self):
+        return super().load_datasets()
 
 if __name__ == "__main__":
     all_args = parse_args()

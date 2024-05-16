@@ -2,22 +2,22 @@ model_args:
   model_name_or_path: "Qwen/Qwen1.5-0.5B"
 
 data_args:
-  data_path: "../shepherd_data.pkl"
+  data_path: "/Users/anhvth/gitprojects/LLaMA-Factory/data/alpaca_data_en_52k.json"
   eval_data_path: null
   lazy_preprocess: true
 
 training_args:
-  output_dir: "output/deepseek_for_process"
+  output_dir: "output/debug"
   overwrite_output_dir: true
   num_train_epochs: 18
-  per_device_train_batch_size: 64
+  per_device_train_batch_size: 2
   per_device_eval_batch_size: 1
   gradient_accumulation_steps: 1
   evaluation_strategy: "epoch"
   save_strategy: "epoch"
   save_steps: 10
   save_total_limit: 1
-  learning_rate: 1e-5
+  learning_rate: 0.00001
   weight_decay: 0.01
   adam_beta2: 0.95
   warmup_ratio: 0.00
@@ -25,8 +25,8 @@ training_args:
   logging_steps: 1
   report_to:
     - "tensorboard"
-  model_max_length: 1024
-  use_lora: true
+  model_max_length: 512
+  use_lora: false
   gradient_checkpointing: true
   # fp16: true
 
@@ -44,4 +44,4 @@ lora_args:
     - "down_proj"
   lora_weight_path: ""
   lora_bias: "none"
-  q_lora: true
+  q_lora: false
