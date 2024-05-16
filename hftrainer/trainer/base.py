@@ -23,6 +23,9 @@ from hftrainer.trainer.base_dataclasses import (
     ModelArguments,
     TrainingArguments,
 )
+from datasets import load_dataset
+from transformers import PreTrainedTokenizer
+from datasets import Dataset
 
 
 def init_model(model_args, training_args, lora_args, device_map=None):

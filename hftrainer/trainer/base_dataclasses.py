@@ -18,6 +18,7 @@ class TrainingArguments(transformers.TrainingArguments):
     cache_dir: Optional[str] = None
     optim: str = "adamw_torch"
     model_max_length: int = 8192
+    data_max_length: int = 8192
     use_lora: bool = False
 
 

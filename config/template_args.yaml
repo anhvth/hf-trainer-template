@@ -26,6 +26,7 @@ training_args:
   report_to:
     - "tensorboard"
   model_max_length: 1024
+  data_max_length: 1024
   use_lora: true
   gradient_checkpointing: true
   bf16: true
