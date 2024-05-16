@@ -20,7 +20,7 @@ class TrainingArguments(transformers.TrainingArguments):
     model_max_length: int = 8192
     data_max_length: int = 8192
     use_lora: bool = False
-
+    target_loss_only: Optional[str] = False
 
 @dataclass
 class LoraArguments:

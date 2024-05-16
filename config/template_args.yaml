@@ -30,6 +30,7 @@ training_args:
   use_lora: true
   gradient_checkpointing: true
   bf16: true
+  target_loss_only: true
 
 lora_args:
   lora_r: 64

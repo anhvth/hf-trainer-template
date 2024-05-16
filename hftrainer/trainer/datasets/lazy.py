@@ -41,7 +41,7 @@ def default_preproc(
         target_ids=target_ids,
         attention_mask=attention_mask
     )
-
+from llm_utils import transform_messages_to_chatml
 class LazySupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
@@ -63,7 +63,7 @@ class LazySupervisedDataset(Dataset):
 
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
         ret: PreprocOutputModel = self.preproc_fn(
-            self.raw_data[i], self.tokenizer, self.max_len
+            transform_messages_to_chatml(self.raw_data[i]), self.tokenizer, self.max_len
         )
         return {
             "input_ids": torch.tensor(ret.input_ids, dtype=torch.int),

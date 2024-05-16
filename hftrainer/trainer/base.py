@@ -98,6 +98,25 @@ if os.getenv("JUPYTER") == "True":
 
 
 def parse_args(config_path=None, verbose=True):
+    """
+    Example usage:```
+    model_args, data_args, training_args, lora_args = parse_args(config_path)
+    ```
+    Parse the command-line arguments and load the configuration from a YAML file.
+
+    Args:
+        config_path (str, optional): Path to the YAML configuration file. Defaults to None.
+        verbose (bool, optional): Whether to print the arguments table. Defaults to True.
+
+    Returns:
+        tuple: A tuple containing the parsed model arguments, data arguments, training arguments, and lora arguments.
+
+    Raises:
+        FileNotFoundError: If the specified configuration file does not exist.
+
+    Usage:
+        model_args, data_args, training_args, lora_args = parse_args(config_path)
+    """
     parser = ArgumentParser()
     if config_path is None:
         parser.add_argument("--config_path", type=str, default=config_path)
@@ -106,6 +125,9 @@ def parse_args(config_path=None, verbose=True):
     def load_yaml(file_path):
         with open(file_path, "r") as f:
             return yaml.safe_load(f)
+
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     all_args = load_yaml(config_path)
 
