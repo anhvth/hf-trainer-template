@@ -28,7 +28,7 @@ training_args:
   model_max_length: 1024
   use_lora: true
   gradient_checkpointing: true
-  bf16: true
+  # fp16: true
 
 lora_args:
   lora_r: 64
